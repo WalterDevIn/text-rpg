@@ -1,0 +1,163 @@
+body {
+  background: black;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+}
+
+div#rpg {
+  position: relative;
+  border: 4px white solid;
+  font-size: 24px;
+  padding: 1ch;
+  min-width: 50vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1ch;
+  font-family: Georgia, "Times New Roman", serif;
+  color: white;
+  background: black;
+}
+
+canvas#game-canvas {
+  display: block;
+  background: black;
+  border: 4px white solid;
+  image-rendering: pixelated;
+}
+
+div#rpg-output {
+  margin: 0;
+  min-height: 120px;
+  white-space: pre-wrap;
+  font-size: 0.8em;
+  line-height: 1.4;
+}
+
+div#rpg-input-fieldset {
+  display: flex;
+  gap: 1ch;
+  font-size: 0.8em;
+  display: none;
+}
+
+input#rpg-input {
+  border: 4px white solid;
+  background: black;
+  color: white;
+  padding: 0.4ch 1ch;
+  font-family: Georgia, "Times New Roman", serif;
+  width: 100%;
+  font-size: 1em;
+}
+
+button#rpg-input-enter {
+  background: white;
+  color: black;
+  font-weight: bolder;
+  width: 12ch;
+  border: none;
+  font-size: 1em;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  cursor: pointer;
+}
+
+button#rpg-input-enter:active {
+  background: red;
+  color: white;
+}
+
+input:focus {
+  outline: none;
+}
+
+#action-menu-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.action-orb {
+  position: absolute;
+  width: 4.25rem;
+  height: 4.25rem;
+  border: 4px solid white;
+  border-radius: 999px;
+  background: black;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.action-orb:hover {
+  background: white;
+  color: black;
+}
+
+.action-orb.selected {
+  background: #00ff66;
+  color: black;
+  border-color: #00ff66;
+}
+
+.action-submenu {
+  position: absolute;
+  min-width: 280px;
+  border: 4px solid white;
+  background: black;
+  color: white;
+  padding: 1ch;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.action-submenu-title {
+  font-weight: bold;
+  margin-bottom: 1ch;
+  text-align: center;
+}
+
+.action-submenu-button {
+  width: 100%;
+  border: 2px solid white;
+  background: black;
+  color: white;
+  padding: 0.6ch 1ch;
+  margin-bottom: 0.6ch;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.action-submenu-button:hover {
+  background: white;
+  color: black;
+}
+
+.action-submenu-button.selected {
+  background: #00ff66;
+  color: black;
+  border-color: #00ff66;
+}
+
+.action-submenu-empty {
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+div#rpg {
+  display: flex;
+  flex-direction: row;
+}

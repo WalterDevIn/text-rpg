@@ -1,0 +1,15 @@
+Coloca portraits aquí usando alguno de estos formatos:
+
+imagenes/trasgo/trasgo1.jpg
+imagenes/trasgo/trasgo2.png
+imagenes/rata_gigante/rata_gigante1.jpg
+imagenes/esqueleto/esqueleto1.png
+imagenes/acolito_hostil/acolito_hostil1.jpg
+imagenes/vendedora_arcana/vendedora_arcana1.png
+imagenes/jugador/jugador1.jpg
+
+También se aceptan archivos directamente en imagenes/, por ejemplo:
+imagenes/trasgo1.jpg
+imagenes/vendedora_arcana1.png
+
+El juego prueba jpg, png, jpeg y webp, del 1 al 8. Las criaturas del mismo tipo comparten el mismo portrait elegido al azar.
