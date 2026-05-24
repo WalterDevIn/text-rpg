@@ -15,6 +15,7 @@ import {
   setupActionMenuUi,
   showActionMenu,
   hideActionMenu,
+  updateActionOverlay,
 } from "./actionMenuUi.js";
 
 const root = document.getElementById("rpg");
@@ -55,6 +56,7 @@ function gameLoop(currentTime) {
 
   draw();
   updateHud();
+  updateActionOverlay();
 
   requestAnimationFrame(gameLoop);
 }

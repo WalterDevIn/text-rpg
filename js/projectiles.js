@@ -341,6 +341,8 @@ export function spawnChromaticOrbShot(caster, point, options = {}) {
     rollText: options.rollText ?? "",
     lifetime: CHROMATIC_ORB_PROJECTILE_LIFETIME,
     delay: 0,
+    bouncesRemaining: 4,
+    lastHitTargetId: null,
     alive: true,
   });
 
@@ -627,7 +629,7 @@ function updateChromaticOrb(projectile, deltaTime) {
   accelerateProjectile(projectile, deltaTime);
 
   const totalDistance = projectile.speed * deltaTime;
-  const stepDistance = Math.max(2, projectile.radius * 0.75);
+  const stepDistance = Math.max(2, projectile.radius * 0.65);
   const steps = Math.max(1, Math.ceil(totalDistance / stepDistance));
   const distancePerStep = totalDistance / steps;
 
@@ -638,23 +640,57 @@ function updateChromaticOrb(projectile, deltaTime) {
     const nextX = projectile.x + Math.cos(projectile.angle) * distancePerStep;
     const nextY = projectile.y + Math.sin(projectile.angle) * distancePerStep;
 
-    if (isCollidingWithWall(projectile, nextX, nextY)) {
+    const hitBeforeWall = getFirstChromaticOrbHitTarget(projectile, { x: nextX, y: nextY });
+
+    if (hitBeforeWall) {
+      projectile.x = nextX;
+      projectile.y = nextY;
+      damageTarget(hitBeforeWall, projectile.damage, projectile.kind, projectile);
       projectile.alive = false;
-      gameState.message = "El orbe cromático se rompe contra la pared.";
+      return;
+    }
+
+    if (isCollidingWithWall(projectile, nextX, nextY)) {
+      if (!bounceChromaticOrb(projectile, nextX, nextY)) {
+        projectile.alive = false;
+        gameState.message = "El orbe cromático se rompe contra la pared.";
+      }
       return;
     }
 
     projectile.x = nextX;
     projectile.y = nextY;
-
-    const hitTarget = getFirstChromaticOrbHitTarget(projectile);
-
-    if (hitTarget) {
-      damageTarget(hitTarget, projectile.damage, projectile.kind, projectile);
-      projectile.alive = false;
-      return;
-    }
   }
+}
+
+function bounceChromaticOrb(projectile, nextX, nextY) {
+  projectile.bouncesRemaining = projectile.bouncesRemaining ?? 0;
+
+  if (projectile.bouncesRemaining <= 0) {
+    return false;
+  }
+
+  const xBlocked = isCollidingWithWall(projectile, nextX, projectile.y);
+  const yBlocked = isCollidingWithWall(projectile, projectile.x, nextY);
+
+  if (xBlocked && !yBlocked) {
+    projectile.angle = Math.PI - projectile.angle;
+  } else if (!xBlocked && yBlocked) {
+    projectile.angle = -projectile.angle;
+  } else {
+    projectile.angle += Math.PI;
+  }
+
+  projectile.angle = normalizeAngle(projectile.angle);
+  projectile.speed = Math.max(projectile.speed * 0.72, CHROMATIC_ORB_INITIAL_SPEED);
+  projectile.bouncesRemaining -= 1;
+
+  const nudge = projectile.radius + 2;
+  projectile.x += Math.cos(projectile.angle) * nudge;
+  projectile.y += Math.sin(projectile.angle) * nudge;
+
+  gameState.message = `El orbe cromático rebota contra un sólido. Rebotes restantes: ${projectile.bouncesRemaining}.`;
+  return true;
 }
 
 function updateBurningHandsFlame(projectile, deltaTime) {
@@ -754,11 +790,17 @@ function getFirstFireBoltHitTarget(projectile) {
   }) ?? null;
 }
 
-function getFirstChromaticOrbHitTarget(projectile) {
+function getFirstChromaticOrbHitTarget(projectile, nextPoint = null) {
   const targets = projectile.targets ?? [];
+  const segmentStart = { x: projectile.previousX ?? projectile.x, y: projectile.previousY ?? projectile.y };
+  const segmentEnd = nextPoint ?? { x: projectile.x, y: projectile.y };
 
   return targets.find((target) => {
-    return !isTargetDead(target) && hasProjectileHitTarget(projectile, target);
+    if (isTargetDead(target)) {
+      return false;
+    }
+
+    return getDistanceFromPointToSegment(target, segmentStart, segmentEnd) <= projectile.radius + target.radius + 3;
   }) ?? null;
 }
 

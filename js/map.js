@@ -369,24 +369,99 @@ export function getRooms() {
 
 export function getVisibleTileKeysForPlayer(viewer) {
   const region = getCurrentRegionForEntity(viewer);
+  const visible = region ? new Set(region.tiles) : new Set();
 
-  if (region) {
-    return region.tiles;
+  addLineOfSightPeekTiles(viewer, visible);
+
+  if (visible.size > 0) {
+    return visible;
   }
 
   const row = Math.floor(viewer.y / TILE_SIZE);
   const col = Math.floor(viewer.x / TILE_SIZE);
-  const fallback = new Set();
 
   for (let r = row - 1; r <= row + 1; r++) {
     for (let c = col - 1; c <= col + 1; c++) {
       if (isInsideMap(r, c)) {
-        fallback.add(tileKey(r, c));
+        visible.add(tileKey(r, c));
       }
     }
   }
 
-  return fallback;
+  return visible;
+}
+
+function addLineOfSightPeekTiles(viewer, visible) {
+  const viewerRow = Math.floor(viewer.y / TILE_SIZE);
+  const viewerCol = Math.floor(viewer.x / TILE_SIZE);
+  const peekRadiusTiles = 6;
+  const floorKeysSeenThroughOpenings = [];
+
+  for (let row = viewerRow - peekRadiusTiles; row <= viewerRow + peekRadiusTiles; row++) {
+    for (let col = viewerCol - peekRadiusTiles; col <= viewerCol + peekRadiusTiles; col++) {
+      if (!isInsideMap(row, col)) {
+        continue;
+      }
+
+      const dx = col - viewerCol;
+      const dy = row - viewerRow;
+
+      if (dx * dx + dy * dy > peekRadiusTiles * peekRadiusTiles) {
+        continue;
+      }
+
+      if (isWallAt(row, col)) {
+        continue;
+      }
+
+      const center = tileCenter(row, col);
+
+      if (!hasMapLineOfSight(viewer, center)) {
+        continue;
+      }
+
+      const key = tileKey(row, col);
+      visible.add(key);
+      floorKeysSeenThroughOpenings.push({ row, col });
+    }
+  }
+
+  for (const tile of floorKeysSeenThroughOpenings) {
+    addAdjacentBoundaryWalls(tile.row, tile.col, visible);
+  }
+}
+
+function addAdjacentBoundaryWalls(row, col, visible) {
+  for (let r = row - 1; r <= row + 1; r++) {
+    for (let c = col - 1; c <= col + 1; c++) {
+      if (!isInsideMap(r, c)) {
+        continue;
+      }
+
+      if (isWallAt(r, c)) {
+        visible.add(tileKey(r, c));
+      }
+    }
+  }
+}
+
+function hasMapLineOfSight(from, to) {
+  const distance = Math.hypot(to.x - from.x, to.y - from.y);
+  const steps = Math.max(1, Math.ceil(distance / (TILE_SIZE / 4)));
+
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const x = from.x + (to.x - from.x) * t;
+    const y = from.y + (to.y - from.y) * t;
+    const row = Math.floor(y / TILE_SIZE);
+    const col = Math.floor(x / TILE_SIZE);
+
+    if (isWallAt(row, col)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export function isTileVisibleToPlayer(row, col, viewer) {

@@ -34,7 +34,7 @@ import {
   getLivingEnemies,
 } from "./combat.js";
 import { canPlaceEntityAt, getDistance, getSurfaceDistance, normalizeVector } from "./physics.js";
-import { ActionType, gameState } from "./state.js";
+import { ActionType, GameMode, gameState } from "./state.js";
 import {
   DUNGEON_DOOR_CHAR,
   DUNGEON_FLOOR_CHAR,
@@ -108,6 +108,24 @@ export function hideActionMenu() {
 
   layer.innerHTML = "";
   submenuType = null;
+}
+
+export function updateActionOverlay() {
+  if (!layer) return;
+
+  if (gameState.mode === GameMode.ACTION_MENU) {
+    return;
+  }
+
+  if (!player.isCasting || !isReaimableCastingSpell(player.castingSpell)) {
+    if (submenuType === null) {
+      layer.innerHTML = "";
+    }
+    return;
+  }
+
+  layer.innerHTML = "";
+  renderCastingAimPreview();
 }
 
 function renderActionMenu() {
@@ -1752,6 +1770,94 @@ function renderConePreview(direction) {
 }
 
 
+function isReaimableCastingSpell(spell) {
+  return spell === ActionType.CAST_FIREBALL ||
+    spell === ActionType.CAST_FIRE_BOLT ||
+    spell === ActionType.CAST_CHROMATIC_ORB ||
+    spell === ActionType.CAST_BURNING_HANDS;
+}
+
+function renderCastingAimPreview() {
+  const playerScreenPosition = getPlayerScreenPosition();
+
+  if (player.castingSpell === ActionType.CAST_BURNING_HANDS) {
+    renderTargetingHelp({
+      text: `Casteando Manos ardientes. Mové el mouse para reapuntar el cono. Descarga: ${Math.max(0, player.castingRemaining).toFixed(1)}s.`,
+      center: playerScreenPosition,
+    });
+
+    const direction = player.castingAimDirection ?? gameState.selectedAimDirection;
+
+    if (direction) {
+      renderConePreview(direction);
+    }
+
+    return;
+  }
+
+  if (player.castingSpell === ActionType.CAST_FIREBALL) {
+    renderTargetingHelp({
+      text: `Casteando Bola de fuego. Mové el mouse para reapuntar. Detonación: ${Math.max(0, player.castingRemaining).toFixed(1)}s.`,
+      center: playerScreenPosition,
+    });
+
+    const point = player.castingBoardPoint ?? gameState.selectedBoardPoint ?? gameState.mouseWorldPoint;
+
+    if (point) {
+      const inRange = getDistance(player, point) <= FIREBALL_RANGE_PIXELS;
+      renderCirclePreview(point, FIREBALL_RADIUS_PIXELS, inRange, "#ff6600");
+    }
+
+    return;
+  }
+
+  if (player.castingSpell === ActionType.CAST_FIRE_BOLT) {
+    renderTargetingHelp({
+      text: `Casteando Saeta de fuego. Mové el mouse para reapuntar la línea. Disparo: ${Math.max(0, player.castingRemaining).toFixed(1)}s.`,
+      center: playerScreenPosition,
+    });
+
+    const direction = player.castingAimDirection ?? gameState.selectedAimDirection;
+
+    if (direction) {
+      renderLinePreview({
+        direction,
+        distancePixels: FIRE_BOLT_RANGE_PIXELS,
+        color: "rgba(255, 80, 0, 0.75)",
+        markerBorder: "2px solid #ff5000",
+        markerShadow: "0 0 10px rgba(255, 80, 0, 0.85)",
+      });
+    }
+
+    return;
+  }
+
+  if (player.castingSpell === ActionType.CAST_CHROMATIC_ORB) {
+    renderTargetingHelp({
+      text: `Casteando Orbe cromático. Mové el mouse para reapuntar el punto que seguirá el orbe. Lanzamiento: ${Math.max(0, player.castingRemaining).toFixed(1)}s.`,
+      center: playerScreenPosition,
+    });
+
+    const point = player.castingBoardPoint ?? gameState.selectedBoardPoint ?? gameState.mouseWorldPoint;
+
+    if (point) {
+      const inRange = getDistance(player, point) <= CHROMATIC_ORB_RANGE_PIXELS;
+      renderCirclePreview(point, TILE_SIZE * 0.45, inRange, "#66d9ff");
+      const direction = normalizeVector(point.x - player.x, point.y - player.y);
+
+      if (direction.x !== 0 || direction.y !== 0) {
+        renderLinePreview({
+          direction,
+          distancePixels: Math.min(getDistance(player, point), CHROMATIC_ORB_RANGE_PIXELS),
+          color: "rgba(102, 217, 255, 0.55)",
+          markerBorder: "2px solid #66d9ff",
+          markerShadow: "0 0 10px rgba(102, 217, 255, 0.75)",
+        });
+      }
+    }
+  }
+}
+
 function handleBoardPointerMove(event) {
   const boardPoint = getBoardPointFromPointer(event);
 
@@ -1763,7 +1869,68 @@ function handleBoardPointerMove(event) {
 
   if (player.isCasting) {
     updateCastingAimFromBoardPoint(boardPoint);
+    return;
   }
+
+  if (updateLiveTargetingPreviewFromBoardPoint(boardPoint)) {
+    renderActionMenu();
+  }
+}
+
+function updateLiveTargetingPreviewFromBoardPoint(boardPoint) {
+  if (submenuType === "burning_hands_aim") {
+    const direction = normalizeVector(boardPoint.x - player.x, boardPoint.y - player.y);
+
+    if (direction.x === 0 && direction.y === 0) {
+      return false;
+    }
+
+    gameState.selectedAction = ActionType.CAST_BURNING_HANDS;
+    gameState.selectedTargetId = null;
+    gameState.selectedInventoryItemId = null;
+    gameState.selectedDodgeDirection = null;
+    gameState.selectedAimDirection = direction;
+    gameState.selectedBoardPoint = null;
+    return true;
+  }
+
+  if (submenuType === "fire_bolt_aim") {
+    const direction = normalizeVector(boardPoint.x - player.x, boardPoint.y - player.y);
+
+    if (direction.x === 0 && direction.y === 0) {
+      return false;
+    }
+
+    gameState.selectedAction = ActionType.CAST_FIRE_BOLT;
+    gameState.selectedTargetId = null;
+    gameState.selectedInventoryItemId = null;
+    gameState.selectedDodgeDirection = null;
+    gameState.selectedAimDirection = direction;
+    gameState.selectedBoardPoint = null;
+    return true;
+  }
+
+  if (submenuType === "fireball_point") {
+    gameState.selectedAction = ActionType.CAST_FIREBALL;
+    gameState.selectedTargetId = null;
+    gameState.selectedInventoryItemId = null;
+    gameState.selectedDodgeDirection = null;
+    gameState.selectedAimDirection = null;
+    gameState.selectedBoardPoint = boardPoint;
+    return true;
+  }
+
+  if (submenuType === "chromatic_orb_point") {
+    gameState.selectedAction = ActionType.CAST_CHROMATIC_ORB;
+    gameState.selectedTargetId = null;
+    gameState.selectedInventoryItemId = null;
+    gameState.selectedDodgeDirection = null;
+    gameState.selectedAimDirection = null;
+    gameState.selectedBoardPoint = boardPoint;
+    return true;
+  }
+
+  return false;
 }
 
 function updateCastingAimFromBoardPoint(boardPoint) {
@@ -1771,12 +1938,12 @@ function updateCastingAimFromBoardPoint(boardPoint) {
     return;
   }
 
-  if (player.castingSpell === ActionType.CAST_MAGIC_MISSILE) {
-    const target = findClosestClickedTarget(boardPoint, getVisibleTargets(getEnemiesInMagicMissileRange()));
+  if (player.castingSpell === ActionType.CAST_BURNING_HANDS) {
+    const direction = normalizeVector(boardPoint.x - player.x, boardPoint.y - player.y);
 
-    if (target) {
-      player.castingTargetId = target.id;
-      gameState.message = `Reapuntas Misil mágico hacia ${target.name}.`;
+    if (direction.x !== 0 || direction.y !== 0) {
+      player.castingAimDirection = direction;
+      gameState.selectedAimDirection = direction;
     }
 
     return;
