@@ -1,0 +1,15 @@
+{
+  "centipede": {
+    "id": "centipede",
+    "name": "Ciempiés gigante",
+    "kind": "segmented_creature",
+    "ai": "serpent",
+    "segmentCount": 6
+  },
+  "bandit": {
+    "id": "bandit",
+    "name": "Bandido",
+    "kind": "humanoid",
+    "ai": "melee"
+  }
+}

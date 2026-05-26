@@ -1,0 +1,7 @@
+{
+  "id": "dungeon",
+  "name": "Dungeon",
+  "defaultFloorTile": ".",
+  "defaultWallTile": "#",
+  "doorTile": "+"
+}

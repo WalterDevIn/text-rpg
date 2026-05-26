@@ -1,0 +1,7 @@
+{
+  "id": "palace_backrooms",
+  "name": "Backrooms del palacio",
+  "defaultFloorTile": ".",
+  "defaultWallTile": "#",
+  "doorTile": "+"
+}

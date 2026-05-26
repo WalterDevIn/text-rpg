@@ -1,0 +1,4 @@
+{
+  "dagger": { "id": "dagger", "name": "Daga", "damage": "1d4", "damageType": "piercing" },
+  "shortsword": { "id": "shortsword", "name": "Espada corta", "damage": "1d6", "damageType": "piercing" }
+}

@@ -1,0 +1,6 @@
+{
+  "id": "caves",
+  "name": "Cuevas",
+  "generation": "cellular_or_rooms",
+  "tiles": ["stone_wall", "stone_floor", "ore", "water"]
+}

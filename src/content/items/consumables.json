@@ -1,0 +1,3 @@
+{
+  "healing_potion": { "id": "healing_potion", "name": "Poción de curación", "effect": "heal", "amount": "2d4+2" }
+}
